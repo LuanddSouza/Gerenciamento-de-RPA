@@ -106,30 +106,44 @@ app.post('/executar', authMiddleware, async (req, res) => {
     data_fim
   });
 
-  try {
-    await axios.post('URL_DO_RPA', {
-      robo,
-      estabelecimento,
-      data_inicio,
-      data_fim
-    }, {
-      timeout: 10000
-    });
+  let token;
 
-    res.json({
-      ok: true,
-      mensagem: 'Robô executado com sucesso'
-    });
+  if (robo === 'Despesas') {
+    token = process.env.TOKEN_DESPESAS;
+  } else if (robo === 'Estoque') {
+    token = process.env.TOKEN_ESTOQUE;
 
-  } catch (err) {
-    console.error('Erro:', err.message);
+    try {
+      await axios.post(
+        process.env.ENDPOINT,
+        {
+          estabelecimento,
+          data_inicio,
+          data_fim
+        },
+        {
+          headers: {
+            'x_roberty_token': process.env.TOKEN_DESPESAS,
+            'Content-Type': 'application/json'
+          },
+          timeout: 10000
+        }
+      );
+
+      res.json({
+        ok: true,
+        mensagem: 'Robô executado com sucesso'
+      });
+
+    } catch (err) {
+      console.error('Erro:', err.message);
+    }
 
     res.status(500).json({
       erro: 'Erro ao executar robô'
     });
   }
 });
-
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
