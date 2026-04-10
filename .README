@@ -1,0 +1,95 @@
+# ⚙️ Painel RPA
+
+Sistema simples para executar robôs (RPA) via interface web.
+
+---
+
+## 🚀 Funcionalidades
+
+* Login simples (usuários em JSON)
+* Seleção de robô
+* Seleção de estabelecimento
+* Filtro por período
+* Execução via API/Webhook
+
+---
+
+## 🧱 Tecnologias
+
+* Node.js
+* Express
+* Express-session
+* Axios
+* HTML + TailwindCSS
+
+---
+
+## 📁 Estrutura
+
+```
+/project
+  server.js
+  users.json
+  estabelecimentos.json
+  /public
+    login.html
+    dashboard.html
+```
+
+---
+
+## 📦 Instalação
+
+```bash
+npm install
+```
+
+---
+
+## ▶️ Executar
+
+```bash
+node server.js
+```
+
+Acesse:
+
+```
+http://localhost:3000
+```
+
+---
+
+## 🔐 Usuários
+
+Definidos em `users.json`:
+
+```json
+[
+  { "username": "admin", "password": "123" }
+]
+```
+
+---
+
+## 🔧 Configuração
+
+No `server.js`, configure a URL do RPA:
+
+```js
+await axios.post('URL_DO_RPA', { ... });
+```
+
+---
+
+## ⚠️ Observações
+
+* Projeto para uso local/interno
+* Não possui autenticação avançada
+* Não recomendado para produção sem ajustes
+
+---
+
+## 👨‍💻 Autor
+
+Luan de Souza

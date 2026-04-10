@@ -1,0 +1,9 @@
+# Dependências
+node_modules/
+
+# Variáveis de ambiente
+.env
+
+# Dados locais
+users.json
+estabelecimentos.json
