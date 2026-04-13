@@ -2,6 +2,7 @@ const express = require('express');
 const session = require('express-session');
 const path = require('path');
 const axios = require('axios');
+require('dotenv').config();
 
 const app = express();
 const PORT = 3000;
@@ -50,7 +51,7 @@ app.post('/login', (req, res) => {
   res.redirect('/dashboard');
 });
 
-// DASHBOARD protegido
+// DASHBOARD
 app.get('/dashboard', authMiddleware, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
@@ -90,13 +91,59 @@ app.get('/estabelecimentos', authMiddleware, (req, res) => {
   );
 });
 
+//esperar robo terminar execução
+async function esperarExecucao(webhookCallId) {
+  const url = `https://api.roberty.app/prod/1/customer/robot/webhookResponse/${webhookCallId}`;
+
+  let tentativas = 0;
+  const maxTentativas = 40; // (8s cada)
+
+  while (tentativas < maxTentativas) {
+    try {
+      const response = await axios.get(url);
+
+      const status = response.data?.status;
+      console.log(`Tentativa ${tentativas + 1}:`, status);
+
+      if (status === 'DONE') {
+        return {
+          status: 'DONE',
+          data: response.data
+        };
+      }
+
+    } catch (err) {
+      console.error('Erro ao consultar status:', {
+        message: err.message,
+        status: err.response?.status,
+        data: err.response?.data
+      });
+
+    }
+
+    tentativas++;
+
+    // espera 8 segundos
+    await new Promise(resolve => setTimeout(resolve, 8000));
+  }
+
+  return {
+    status: 'PROCESSANDO',
+    webhookCallId
+  };
+}
+
+
 // EXECUTAR ROBÔ
 app.post('/executar', authMiddleware, async (req, res) => {
-  const { robo, estabelecimento, data_inicio, data_fim } = req.body;
+  let { robo, estabelecimento, data_inicio, data_fim } = req.body;
 
   if (!robo || !estabelecimento || !data_inicio || !data_fim) {
     return res.status(400).json({ erro: 'Campos obrigatórios faltando' });
   }
+  console.log('Data antes da formatação: ', { data_inicio, data_fim });
+  data_inicio = data_inicio.split('-').reverse().join('/');
+  data_fim = data_fim.split('-').reverse().join('/');
 
   console.log('Executando robô:', {
     usuario: req.session.user.username,
@@ -106,45 +153,52 @@ app.post('/executar', authMiddleware, async (req, res) => {
     data_fim
   });
 
+  // Escolhe token baseado no robô
   let token;
-
+  console.log('ENDPOINT:', process.env.ENDPOINT);
   if (robo === 'Despesas') {
     token = process.env.TOKEN_DESPESAS;
   } else if (robo === 'Estoque') {
     token = process.env.TOKEN_ESTOQUE;
+  } else {
+    return res.status(400).json({ erro: 'Robô inválido' });
+  }
 
-    try {
-      await axios.post(
-        process.env.ENDPOINT,
-        {
-          estabelecimento,
-          data_inicio,
-          data_fim
+  try {
+    const startResponse = await axios.post(
+      process.env.ENDPOINT,
+      {
+        estabelecimento,
+        data_inicio,
+        data_fim
+      },
+      {
+        headers: {
+          'x-roberty-token': token,
+          'Content-Type': 'application/json'
         },
-        {
-          headers: {
-            'x_roberty_token': process.env.TOKEN_DESPESAS,
-            'Content-Type': 'application/json'
-          },
-          timeout: 10000
-        }
-      );
+        timeout: 10000
+      }
+    );
 
-      res.json({
-        ok: true,
-        mensagem: 'Robô executado com sucesso'
-      });
+    const webhookCallId = startResponse.data.webhookCallId;
+    const resultado = await esperarExecucao(webhookCallId);
 
-    } catch (err) {
-      console.error('Erro:', err.message);
-    }
+    return res.json({
+      ok: true,
+      resultado: resultado.response,
+      status: resultado.status,
+    });
 
-    res.status(500).json({
+  } catch (err) {
+    console.error('Erro ao executar robô:', err.message);
+
+    return res.status(500).json({
       erro: 'Erro ao executar robô'
     });
   }
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
 });
