@@ -11,7 +11,6 @@
 
 <body class="bg-gradient-to-br from-gray-100 to-gray-200 min-h-screen font-sans">
 
-    <!-- HEADER -->
     <header class="bg-white/80 backdrop-blur shadow-sm p-4 flex justify-between items-center">
         <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
             ⚙️ <span>Painel RPA</span>
@@ -19,27 +18,29 @@
         <a href="/logout" class="text-red-500 font-medium hover:text-red-600 transition">Sair</a>
     </header>
 
-    <!-- CONTAINER -->
     <div class="flex justify-center items-center mt-16 px-4">
         <div class="bg-white p-10 rounded-3xl shadow-xl w-full max-w-xl border border-gray-100">
 
             <h2 class="text-3xl font-semibold text-gray-800 mb-8 text-center">
                 Executar Robô
             </h2>
+
             <div class="space-y-5">
 
                 <!-- ROBÔ -->
                 <div>
                     <label class="block text-sm text-gray-500 mb-1">Robô</label>
                     <select id="robo"
-                        class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"></select>
+                        class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition"></select>
                 </div>
 
-                <!-- ESTAB -->
+                <!-- ESTABELECIMENTOS -->
                 <div>
-                    <label class="block text-sm text-gray-500 mb-1">Estabelecimento</label>
-                    <select id="estabelecimento"
-                        class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"></select>
+                    <label class="block text-sm text-gray-500 mb-2">Estabelecimentos</label>
+
+                    <div id="estabelecimentosContainer"
+                        class="max-h-52 overflow-y-auto border border-gray-200 rounded-xl p-2 space-y-1">
+                    </div>
                 </div>
 
                 <!-- DATAS -->
@@ -67,7 +68,6 @@
                 </button>
 
             </div>
-
         </div>
     </div>
 
@@ -81,12 +81,13 @@
         const estabs = await fetch('/estabelecimentos').then(r => r.json());
 
         const roboSelect = document.getElementById('robo');
-        const estSelect = document.getElementById('estabelecimento');
+        const estContainer = document.getElementById('estabelecimentosContainer');
 
-        // limpa antes (evita duplicação)
+        // limpar
         roboSelect.innerHTML = '';
-        estSelect.innerHTML = '';
+        estContainer.innerHTML = '';
 
+        // ROBÔS
         robos.forEach(r => {
             const opt = document.createElement('option');
             opt.value = r.id;
@@ -94,11 +95,33 @@
             roboSelect.appendChild(opt);
         });
 
+        // ESTABELECIMENTOS (CHECKBOX)
         estabs.forEach(e => {
-            const opt = document.createElement('option');
-            opt.value = e.id;
-            opt.innerText = e.nome;
-            estSelect.appendChild(opt);
+            const item = document.createElement('label');
+
+            item.className = `
+                flex items-center gap-3 p-3 rounded-xl border border-gray-200 
+                cursor-pointer hover:bg-blue-50 hover:border-blue-400 transition
+            `;
+
+            item.innerHTML = `
+                <input type="checkbox" value="${e.id}" 
+                    class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+
+                <span class="text-gray-700 font-medium">${e.nome}</span>
+            `;
+
+            const checkbox = item.querySelector('input');
+
+            checkbox.addEventListener('change', () => {
+                if (checkbox.checked) {
+                    item.classList.add('bg-blue-100', 'border-blue-500');
+                } else {
+                    item.classList.remove('bg-blue-100', 'border-blue-500');
+                }
+            });
+
+            estContainer.appendChild(item);
         });
     }
 
@@ -126,15 +149,21 @@
     }
 
     async function executar() {
-        if (executando) return; 
+        if (executando) return;
 
         bloquearUI();
 
         const status = document.getElementById('status');
 
+        // PEGAR CHECKBOXES
+        const checkboxes = document.querySelectorAll('#estabelecimentosContainer input:checked');
+
+        const estabelecimentos = Array.from(checkboxes)
+            .map(cb => cb.value);
+
         const data = {
             robo: document.getElementById('robo').value,
-            estabelecimento: document.getElementById('estabelecimento').value,
+            estabelecimentos,
             data_inicio: document.getElementById('data_inicio').value,
             data_fim: document.getElementById('data_fim').value
         };

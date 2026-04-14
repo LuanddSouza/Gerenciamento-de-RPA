@@ -81,7 +81,7 @@ async function esperarExecucao(webhookCallId) {
   const url = `https://api.roberty.app/prod/1/customer/robot/webhookResponse/${webhookCallId}`;
 
   let tentativas = 0;
-  const maxTentativas = 100; // (10s cada)
+  const maxTentativas = 1000; // (10s cada)
 
   while (tentativas < maxTentativas) {
     try {
@@ -132,10 +132,10 @@ app.get('/status', authMiddleware, (req, res) => {
 
 // EXECUTAR ROBÔ
 app.post('/executar', authMiddleware, async (req, res) => {
-  let { robo, estabelecimento, data_inicio, data_fim } = req.body;
+  let { robo, estabelecimentos, data_inicio, data_fim } = req.body;
   const userId = req.session.user.username;
 
-  if (!robo || !estabelecimento || !data_inicio || !data_fim) {
+  if (!robo || !estabelecimentos || estabelecimentos.length === 0 || !data_inicio || !data_fim) {
     return res.status(400).json({ erro: 'Campos obrigatórios faltando' });
   }
 
@@ -145,14 +145,13 @@ app.post('/executar', authMiddleware, async (req, res) => {
     });
   }
 
-  console.log('Data antes da formatação: ', { data_inicio, data_fim });
   data_inicio = data_inicio.split('-').reverse().join('/');
   data_fim = data_fim.split('-').reverse().join('/');
 
   console.log('Executando robô:', {
     usuario: req.session.user.username,
     robo,
-    estabelecimento,
+    estabelecimentos,
     data_inicio,
     data_fim
   });
@@ -171,11 +170,11 @@ app.post('/executar', authMiddleware, async (req, res) => {
   try {
 
     execucoesAtivas.set(userId, true);
-
+    const estabelecimentosTexto = estabelecimentos.join(',');
     const startResponse = await axios.post(
       process.env.ENDPOINT,
       {
-        estabelecimento,
+        estabelecimentos: estabelecimentosTexto,
         data_inicio,
         data_fim
       },
