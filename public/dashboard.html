@@ -16,14 +16,12 @@
         <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
             ⚙️ <span>Painel RPA</span>
         </h1>
-        <a href="/logout"
-            class="text-red-500 font-medium hover:text-red-600 transition">Sair</a>
+        <a href="/logout" class="text-red-500 font-medium hover:text-red-600 transition">Sair</a>
     </header>
 
     <!-- CONTAINER -->
     <div class="flex justify-center items-center mt-16 px-4">
-        <div
-            class="bg-white p-10 rounded-3xl shadow-xl w-full max-w-xl border border-gray-100">
+        <div class="bg-white p-10 rounded-3xl shadow-xl w-full max-w-xl border border-gray-100">
 
             <h2 class="text-3xl font-semibold text-gray-800 mb-8 text-center">
                 Executar Robô
@@ -76,11 +74,19 @@
 </body>
 
 <script>
+    let executando = false;
+
     async function carregarDados() {
         const robos = await fetch('/robos').then(r => r.json());
         const estabs = await fetch('/estabelecimentos').then(r => r.json());
 
         const roboSelect = document.getElementById('robo');
+        const estSelect = document.getElementById('estabelecimento');
+
+        // limpa antes (evita duplicação)
+        roboSelect.innerHTML = '';
+        estSelect.innerHTML = '';
+
         robos.forEach(r => {
             const opt = document.createElement('option');
             opt.value = r.id;
@@ -88,7 +94,6 @@
             roboSelect.appendChild(opt);
         });
 
-        const estSelect = document.getElementById('estabelecimento');
         estabs.forEach(e => {
             const opt = document.createElement('option');
             opt.value = e.id;
@@ -97,16 +102,35 @@
         });
     }
 
-    async function executar() {
+    function bloquearUI(msg = 'Robô em execução...') {
         const btn = document.getElementById('btn');
         const status = document.getElementById('status');
+
+        executando = true;
 
         btn.disabled = true;
         btn.innerText = 'Executando...';
 
         status.classList.remove('hidden');
-        status.innerText = 'Iniciando execução do robô...';
+        status.innerText = msg;
         status.className = 'text-blue-600 text-center text-sm font-medium';
+    }
+
+    function liberarUI() {
+        const btn = document.getElementById('btn');
+
+        executando = false;
+
+        btn.disabled = false;
+        btn.innerText = 'Executar Robô';
+    }
+
+    async function executar() {
+        if (executando) return; 
+
+        bloquearUI();
+
+        const status = document.getElementById('status');
 
         const data = {
             robo: document.getElementById('robo').value,
@@ -124,7 +148,14 @@
 
             const json = await res.json();
 
-            status.innerText = 'Robô iniciado! Acompanhe o processamento...';
+            if (!res.ok) {
+                status.innerText = json.erro || 'Erro ao executar';
+                status.className = 'text-red-600 text-center text-sm font-medium';
+                liberarUI();
+                return;
+            }
+
+            status.innerText = 'Robô executado com sucesso!';
             status.className = 'text-green-600 text-center text-sm font-medium';
 
         } catch (err) {
@@ -132,11 +163,30 @@
             status.className = 'text-red-600 text-center text-sm font-medium';
         }
 
-        btn.disabled = false;
-        btn.innerText = 'Executar Robô';
+        liberarUI();
     }
 
-    carregarDados();
+    async function verificarStatus() {
+        try {
+            const res = await fetch('/status');
+
+            if (!res.ok) throw new Error();
+
+            const json = await res.json();
+
+            if (json.executando) {
+                bloquearUI('Robô ainda está em execução...');
+            }
+
+        } catch {
+            console.warn('Erro ao verificar status do robô');
+        }
+    }
+
+    window.onload = async () => {
+        await carregarDados();
+        await verificarStatus();
+    };
 </script>
 
 </html>

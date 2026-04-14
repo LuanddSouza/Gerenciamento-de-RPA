@@ -6,7 +6,7 @@ require('dotenv').config();
 
 const app = express();
 const PORT = 3000;
-
+const execucoesAtivas = new Map();
 const users = require('./users.json');
 
 app.use(express.json());
@@ -70,25 +70,10 @@ app.get('/robos', authMiddleware, (req, res) => {
   ]);
 });
 
-// LISTA DE ESTABELECIMENTOS (mock)
+const estabelecimentos = require('./estabelecimentos.json');
+
 app.get('/estabelecimentos', authMiddleware, (req, res) => {
-  res.json([
-    { "id": 3, "nome": "NUTREPAMPA CEREALISTA" },
-    { "id": 1, "nome": "NUTREPAMPA MATRIZ" },
-    { "id": 5, "nome": "JOST - PROVEMIX" },
-    { "id": 6, "nome": "NUTREPAMPA TEUTÔNIA" },
-    { "id": 7, "nome": "NUTREPAMPA SANTA CATARINA" },
-    { "id": 8, "nome": "NUTREPAMPA MT" },
-    { "id": 500, "nome": "EEM PARTICIPACOES LTDA" },
-    { "id": 700, "nome": "PROVEMIX - RS" },
-    { "id": 800, "nome": "PROVEMIX CANDEIAS DO JAMARI" },
-    { "id": 801, "nome": "CENTRO DISTRIBUIÇÃO PROVEMIX" },
-    { "id": 802, "nome": "PROVEMIX VILHENA" },
-    { "id": 900, "nome": "BELA UNIÃO INVESTIMENTOS" },
-    { "id": 1000, "nome": "CONFINAMENTO JEF" },
-    { "id": 1001, "nome": "PRODUTOR RURAL CONFINAMENTO" }
-  ]
-  );
+  res.json(estabelecimentos);
 });
 
 //esperar robo terminar execução
@@ -96,7 +81,7 @@ async function esperarExecucao(webhookCallId) {
   const url = `https://api.roberty.app/prod/1/customer/robot/webhookResponse/${webhookCallId}`;
 
   let tentativas = 0;
-  const maxTentativas = 40; // (8s cada)
+  const maxTentativas = 100; // (10s cada)
 
   while (tentativas < maxTentativas) {
     try {
@@ -106,10 +91,12 @@ async function esperarExecucao(webhookCallId) {
       console.log(`Tentativa ${tentativas + 1}:`, status);
 
       if (status === 'DONE') {
+        console.log('Robô finalizado com sucesso:', response.data);
         return {
           status: 'DONE',
           data: response.data
         };
+
       }
 
     } catch (err) {
@@ -123,8 +110,8 @@ async function esperarExecucao(webhookCallId) {
 
     tentativas++;
 
-    // espera 8 segundos
-    await new Promise(resolve => setTimeout(resolve, 8000));
+    // espera 10 segundos
+    await new Promise(resolve => setTimeout(resolve, 10000));
   }
 
   return {
@@ -133,14 +120,31 @@ async function esperarExecucao(webhookCallId) {
   };
 }
 
+//verifica status de execução do robô para o usuário
+app.get('/status', authMiddleware, (req, res) => {
+  const userId = req.session.user.username;
+
+  res.json({
+    executando: execucoesAtivas.get(userId) || false
+  });
+});
+
 
 // EXECUTAR ROBÔ
 app.post('/executar', authMiddleware, async (req, res) => {
   let { robo, estabelecimento, data_inicio, data_fim } = req.body;
+  const userId = req.session.user.username;
 
   if (!robo || !estabelecimento || !data_inicio || !data_fim) {
     return res.status(400).json({ erro: 'Campos obrigatórios faltando' });
   }
+
+  if (execucoesAtivas.get(userId)) {
+    return res.status(429).json({
+      erro: 'Já existe um robô em execução para este usuário'
+    });
+  }
+
   console.log('Data antes da formatação: ', { data_inicio, data_fim });
   data_inicio = data_inicio.split('-').reverse().join('/');
   data_fim = data_fim.split('-').reverse().join('/');
@@ -165,6 +169,9 @@ app.post('/executar', authMiddleware, async (req, res) => {
   }
 
   try {
+
+    execucoesAtivas.set(userId, true);
+
     const startResponse = await axios.post(
       process.env.ENDPOINT,
       {
@@ -186,7 +193,7 @@ app.post('/executar', authMiddleware, async (req, res) => {
 
     return res.json({
       ok: true,
-      resultado: resultado.response,
+      resultado: resultado.data,
       status: resultado.status,
     });
 
@@ -196,6 +203,8 @@ app.post('/executar', authMiddleware, async (req, res) => {
     return res.status(500).json({
       erro: 'Erro ao executar robô'
     });
+  } finally {
+    execucoesAtivas.delete(userId);
   }
 });
 
