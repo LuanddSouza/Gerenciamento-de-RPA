@@ -43,7 +43,7 @@ app.post('/login', (req, res) => {
   );
 
   if (!user) {
-    return res.status(401).send('Login inválido');
+    return res.redirect('/login.html?erro=1');
   }
 
   req.session.user = user;

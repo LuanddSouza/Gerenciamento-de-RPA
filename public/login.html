@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,39 +13,32 @@
 <body class="bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center min-h-screen font-sans">
 
   <div class="bg-white/90 backdrop-blur p-10 rounded-3xl shadow-xl w-full max-w-sm border border-gray-100">
-    
+
     <h2 class="text-3xl font-bold text-center text-gray-800 mb-6">
       🔐 Login RPA
     </h2>
+
+    <!-- Mensagem de erro -->
+    <div id="erro" class="hidden bg-red-100 text-red-700 text-sm p-3 rounded-xl text-center mb-4">
+      Usuário ou senha inválidos
+    </div>
 
     <form method="POST" action="/login" class="space-y-5">
 
       <div>
         <label class="block text-sm text-gray-500 mb-1">Usuário</label>
-        <input 
-          type="text" 
-          name="username" 
-          placeholder="Digite seu usuário"
-          required
-          class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-        />
+        <input type="text" name="username" placeholder="Digite seu usuário" required
+          class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" />
       </div>
 
       <div>
         <label class="block text-sm text-gray-500 mb-1">Senha</label>
-        <input 
-          type="password" 
-          name="password" 
-          placeholder="Digite sua senha"
-          required
-          class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-        />
+        <input type="password" name="password" placeholder="Digite sua senha" required
+          class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" />
       </div>
 
-      <button 
-        type="submit"
-        class="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 rounded-xl hover:scale-[1.02] hover:shadow-lg transition duration-200 font-semibold"
-      >
+      <button type="submit"
+        class="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 rounded-xl hover:scale-[1.02] hover:shadow-lg transition duration-200 font-semibold">
         Entrar
       </button>
 
@@ -57,4 +51,13 @@
   </div>
 
 </body>
+
+<!-- Script para mostrar erro -->
+<script>
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('erro')) {
+    document.getElementById('erro').classList.remove('hidden');
+  }
+</script>
+
 </html>
