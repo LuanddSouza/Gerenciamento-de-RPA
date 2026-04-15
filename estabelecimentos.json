@@ -1,0 +1,16 @@
+[
+    { "id": 1, "nome": "1 - NUTREPAMPA MATRIZ" },
+    { "id": 3, "nome": "3 - NUTREPAMPA CEREALISTA" },
+    { "id": 5, "nome": "5 - JOST - PROVEMIX" },
+    { "id": 6, "nome": "6 - NUTREPAMPA TEUTÔNIA" },
+    { "id": 7, "nome": "7 - NUTREPAMPA SANTA CATARINA" },
+    { "id": 8, "nome": "8 - NUTREPAMPA MT" },
+    { "id": 500, "nome": "500 - EEM PARTICIPACOES LTDA" },
+    { "id": 700, "nome": "700 - PROVEMIX - RS" },
+    { "id": 800, "nome": "800 - PROVEMIX CANDEIAS DO JAMARI" },
+    { "id": 801, "nome": "801 - CENTRO DISTRIBUIÇÃO PROVEMIX" },
+    { "id": 802, "nome": "802 - PROVEMIX VILHENA" },
+    { "id": 900, "nome": "900 - BELA UNIÃO INVESTIMENTOS" },
+    { "id": 1000, "nome": "1000 - CONFINAMENTO JEF" },
+    { "id": 1001, "nome": "1001 - PRODUTOR RURAL CONFINAMENTO" }
+  ]

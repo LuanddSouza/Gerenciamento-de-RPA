@@ -88,7 +88,6 @@ async function esperarExecucao(webhookCallId) {
       const response = await axios.get(url);
 
       const status = response.data?.status;
-      console.log(`Tentativa ${tentativas + 1}:`, status);
 
       if (status === 'DONE') {
         console.log('Robô finalizado com sucesso:', response.data);
