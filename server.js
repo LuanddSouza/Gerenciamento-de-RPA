@@ -65,6 +65,7 @@ app.get('/logout', (req, res) => {
 // LISTA DE ROBÔS (mock)
 app.get('/robos', authMiddleware, (req, res) => {
   res.json([
+    {id: 'inicio', nome: 'Selecione um robô'},
     { id: 'Despesas', nome: 'Relatório e Conferência de Despesas' },
     { id: 'Estoque', nome: 'Relatório para Conferênciia de Estoque' }
   ]);
@@ -134,7 +135,7 @@ app.post('/executar', authMiddleware, async (req, res) => {
   let { robo, estabelecimentos, data_inicio, data_fim } = req.body;
   const userId = req.session.user.username;
 
-  if (!robo || !estabelecimentos || estabelecimentos.length === 0 || !data_inicio || !data_fim) {
+  if (!robo || !estabelecimentos || estabelecimentos.length === 0 || !data_inicio || !data_fim || robo == 'inicio') {
     return res.status(400).json({ erro: 'Campos obrigatórios faltando' });
   }
 
