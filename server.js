@@ -67,7 +67,7 @@ app.get('/robos', authMiddleware, (req, res) => {
   res.json([
     {id: 'inicio', nome: 'Selecione um robô'},
     { id: 'Despesas', nome: 'Relatório e Conferência de Despesas' },
-    { id: 'Estoque', nome: 'Relatório para Conferênciia de Estoque' }
+    { id: 'Estoque', nome: 'Relatório para Conferência de Estoque' }
   ]);
 });
 
