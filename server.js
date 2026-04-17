@@ -166,8 +166,9 @@ app.post('/executar', authMiddleware, async (req, res) => {
   } else {
     return res.status(400).json({ erro: 'Robô inválido' });
   }
-
-  try {
+ console.log('Token selecionado para execução: ' + token );
+  
+ try {
 
     execucoesAtivas.set(userId, true);
     const estabelecimentosTexto = estabelecimentos.join(',');
