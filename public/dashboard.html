@@ -76,6 +76,23 @@
 <script>
     let executando = false;
 
+    function iniciarCooldown(tempoMs = 600000) {
+        const fim = Date.now() + tempoMs;
+        localStorage.setItem('cooldown_ate', fim);
+
+        setTimeout(finalizarCooldown, tempoMs);
+    }
+
+    function finalizarCooldown() {
+        localStorage.removeItem('cooldown_ate');
+
+        liberarUI();
+
+        const status = document.getElementById('status');
+        status.innerText = 'Pronto para executar novamente';
+        status.className = 'text-gray-600 text-center text-sm font-medium';
+    }
+
     async function carregarDados() {
         const robos = await fetch('/robos').then(r => r.json());
         const estabs = await fetch('/estabelecimentos').then(r => r.json());
@@ -151,11 +168,11 @@
     async function executar() {
         if (executando) return;
 
-        bloquearUI();
+        bloquearUI('Iniciando execução do robô...');
+        iniciarCooldown(); // ⬅️ já inicia o timer de 10 min
 
         const status = document.getElementById('status');
 
-        // PEGAR CHECKBOXES
         const checkboxes = document.querySelectorAll('#estabelecimentosContainer input:checked');
 
         const estabelecimentos = Array.from(checkboxes)
@@ -180,10 +197,10 @@
             if (!res.ok) {
                 status.innerText = json.erro || 'Erro ao executar';
                 status.className = 'text-red-600 text-center text-sm font-medium';
-                liberarUI();
                 return;
             }
 
+            // 🔥 Aqui só muda mensagem
             status.innerText = 'Robô executado com sucesso!';
             status.className = 'text-green-600 text-center text-sm font-medium';
 
@@ -191,9 +208,8 @@
             status.innerText = 'Erro ao executar o robô';
             status.className = 'text-red-600 text-center text-sm font-medium';
         }
-
-        liberarUI();
     }
+
 
     async function verificarStatus() {
         try {
@@ -215,6 +231,15 @@
     window.onload = async () => {
         await carregarDados();
         await verificarStatus();
+
+        const cooldown = localStorage.getItem('cooldown_ate');
+
+        if (cooldown && Date.now() < cooldown) {
+            bloquearUI('Aguarde para executar novamente...');
+
+            const restante = cooldown - Date.now();
+            setTimeout(finalizarCooldown, restante);
+        }
     };
 </script>
 
