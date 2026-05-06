@@ -82,7 +82,7 @@ async function esperarExecucao(webhookCallId) {
   const url = `https://api.roberty.app/prod/1/customer/robot/webhookResponse/${webhookCallId}`;
 
   let tentativas = 0;
-  const maxTentativas = 1000; // (10s cada)
+  const maxTentativas = 60; // (10s cada)
 
   while (tentativas < maxTentativas) {
     try {
