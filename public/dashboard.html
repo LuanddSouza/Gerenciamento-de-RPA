@@ -76,170 +76,273 @@
 <script>
     let executando = false;
 
+    // inicia cooldown
     function iniciarCooldown(tempoMs = 600000) {
+
         const fim = Date.now() + tempoMs;
+
         localStorage.setItem('cooldown_ate', fim);
+
+        bloquearUI('Aguarde para executar novamente...');
 
         setTimeout(finalizarCooldown, tempoMs);
     }
 
+    // finaliza cooldown
     function finalizarCooldown() {
+
         localStorage.removeItem('cooldown_ate');
 
         liberarUI();
 
         const status = document.getElementById('status');
+
         status.innerText = 'Pronto para executar novamente';
-        status.className = 'text-gray-600 text-center text-sm font-medium';
+
+        status.className =
+            'text-gray-600 text-center text-sm font-medium';
     }
 
+    // carregar robôs e estabelecimentos
     async function carregarDados() {
-        const robos = await fetch('/robos').then(r => r.json());
-        const estabs = await fetch('/estabelecimentos').then(r => r.json());
 
-        const roboSelect = document.getElementById('robo');
-        const estContainer = document.getElementById('estabelecimentosContainer');
+        const robos =
+            await fetch('/robos').then(r => r.json());
+
+        const estabs =
+            await fetch('/estabelecimentos').then(r => r.json());
+
+        const roboSelect =
+            document.getElementById('robo');
+
+        const estContainer =
+            document.getElementById('estabelecimentosContainer');
 
         // limpar
         roboSelect.innerHTML = '';
         estContainer.innerHTML = '';
 
-        // ROBÔS
+        // robôs
         robos.forEach(r => {
+
             const opt = document.createElement('option');
+
             opt.value = r.id;
             opt.innerText = r.nome;
+
             roboSelect.appendChild(opt);
+
         });
 
-        // ESTABELECIMENTOS (CHECKBOX)
+        // estabelecimentos
         estabs.forEach(e => {
+
             const item = document.createElement('label');
 
             item.className = `
-                flex items-center gap-3 p-3 rounded-xl border border-gray-200 
+                flex items-center gap-3 p-3 rounded-xl border border-gray-200
                 cursor-pointer hover:bg-blue-50 hover:border-blue-400 transition
             `;
 
             item.innerHTML = `
-                <input type="checkbox" value="${e.id}" 
-                    class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                <input
+                    type="checkbox"
+                    value="${e.id}"
+                    class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                >
 
-                <span class="text-gray-700 font-medium">${e.nome}</span>
+                <span class="text-gray-700 font-medium">
+                    ${e.nome}
+                </span>
             `;
 
             const checkbox = item.querySelector('input');
 
             checkbox.addEventListener('change', () => {
+
                 if (checkbox.checked) {
-                    item.classList.add('bg-blue-100', 'border-blue-500');
+
+                    item.classList.add(
+                        'bg-blue-100',
+                        'border-blue-500'
+                    );
+
                 } else {
-                    item.classList.remove('bg-blue-100', 'border-blue-500');
+
+                    item.classList.remove(
+                        'bg-blue-100',
+                        'border-blue-500'
+                    );
+
                 }
+
             });
 
             estContainer.appendChild(item);
+
         });
+
     }
 
-    function bloquearUI(msg = 'Robô em execução...') {
-        const btn = document.getElementById('btn');
-        const status = document.getElementById('status');
+    // bloquear interface
+    function bloquearUI(msg = 'Executando robô...') {
+
+        const btn =
+            document.getElementById('btn');
+
+        const status =
+            document.getElementById('status');
 
         executando = true;
 
         btn.disabled = true;
-        btn.innerText = 'Executando...';
+
+        btn.innerText = 'Aguarde...';
 
         status.classList.remove('hidden');
+
         status.innerText = msg;
-        status.className = 'text-blue-600 text-center text-sm font-medium';
+
+        status.className =
+            'text-blue-600 text-center text-sm font-medium';
     }
 
+    // liberar interface
     function liberarUI() {
-        const btn = document.getElementById('btn');
+
+        const btn =
+            document.getElementById('btn');
 
         executando = false;
 
         btn.disabled = false;
+
         btn.innerText = 'Executar Robô';
     }
 
+    // executar robô
     async function executar() {
+
         if (executando) return;
 
-        bloquearUI('Iniciando execução do robô...');
-        iniciarCooldown(); // ⬅️ já inicia o timer de 10 min
+        executando = true;
 
-        const status = document.getElementById('status');
+        bloquearUI('Executando robô...');
 
-        const checkboxes = document.querySelectorAll('#estabelecimentosContainer input:checked');
+        const status =
+            document.getElementById('status');
 
-        const estabelecimentos = Array.from(checkboxes)
-            .map(cb => cb.value);
+        const checkboxes =
+            document.querySelectorAll(
+                '#estabelecimentosContainer input:checked'
+            );
+
+        const estabelecimentos =
+            Array.from(checkboxes)
+                .map(cb => cb.value);
 
         const data = {
-            robo: document.getElementById('robo').value,
+            robo:
+                document.getElementById('robo').value,
+
             estabelecimentos,
-            data_inicio: document.getElementById('data_inicio').value,
-            data_fim: document.getElementById('data_fim').value
+
+            data_inicio:
+                document.getElementById('data_inicio').value,
+
+            data_fim:
+                document.getElementById('data_fim').value
         };
 
         try {
+
             const res = await fetch('/executar', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+
                 body: JSON.stringify(data)
             });
 
             const json = await res.json();
 
+            // erro
             if (!res.ok) {
-                status.innerText = json.erro || 'Erro ao executar';
-                status.className = 'text-red-600 text-center text-sm font-medium';
+
+                status.innerText =
+                    json.erro || 'Erro ao executar';
+
+                status.className =
+                    'text-red-600 text-center text-sm font-medium';
+
+                // se backend informar tempo restante
+                if (json.restanteMs) {
+
+                    iniciarCooldown(json.restanteMs);
+
+                } else {
+
+                    liberarUI();
+
+                }
+
+                executando = false;
+
                 return;
             }
 
-            // 🔥 Aqui só muda mensagem
-            status.innerText = 'Robô executado com sucesso!';
-            status.className = 'text-green-600 text-center text-sm font-medium';
+            // sucesso
+            status.innerText =
+                'Robô iniciado com sucesso!';
+
+            status.className =
+                'text-green-600 text-center text-sm font-medium';
+
+            // inicia cooldown de 10 min
+            iniciarCooldown(600000);
 
         } catch (err) {
-            status.innerText = 'Erro ao executar o robô';
-            status.className = 'text-red-600 text-center text-sm font-medium';
+
+            console.error(err);
+
+            status.innerText =
+                'Erro ao executar o robô';
+
+            status.className =
+                'text-red-600 text-center text-sm font-medium';
+
+            liberarUI();
+
+            executando = false;
         }
     }
 
-
-    async function verificarStatus() {
-        try {
-            const res = await fetch('/status');
-
-            if (!res.ok) throw new Error();
-
-            const json = await res.json();
-
-            if (json.executando) {
-                bloquearUI('Robô ainda está em execução...');
-            }
-
-        } catch {
-            console.warn('Erro ao verificar status do robô');
-        }
-    }
-
+    // ao carregar página
     window.onload = async () => {
-        await carregarDados();
-        await verificarStatus();
 
-        const cooldown = localStorage.getItem('cooldown_ate');
+        await carregarDados();
+
+        const cooldown =
+            localStorage.getItem('cooldown_ate');
 
         if (cooldown && Date.now() < cooldown) {
-            bloquearUI('Aguarde para executar novamente...');
 
-            const restante = cooldown - Date.now();
-            setTimeout(finalizarCooldown, restante);
+            bloquearUI(
+                'Aguarde para executar novamente...'
+            );
+
+            const restante =
+                cooldown - Date.now();
+
+            setTimeout(
+                finalizarCooldown,
+                restante
+            );
+
         }
+
     };
 </script>
 

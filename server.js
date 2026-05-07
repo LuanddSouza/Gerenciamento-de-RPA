@@ -6,8 +6,13 @@ require('dotenv').config();
 
 const app = express();
 const PORT = 3000;
-const execucoesAtivas = new Map();
+
 const users = require('./users.json');
+const estabelecimentos = require('./estabelecimentos.json');
+
+// cooldown por usuário
+const cooldownUsuarios = new Map();
+const TEMPO_COOLDOWN = 10 * 60 * 1000; // 10 minutos
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -15,27 +20,29 @@ app.use(express.urlencoded({ extended: true }));
 app.use(session({
   secret: 'segredo-super-simples',
   resave: false,
-  saveUninitialized: true
+  saveUninitialized: false
 }));
 
-// Servir arquivos estáticos
+// arquivos estáticos
 app.use(express.static(path.join(__dirname, 'public')));
 
+// middleware auth
 function authMiddleware(req, res, next) {
   if (!req.session.user) {
     return res.redirect('/login.html');
   }
+
   next();
 }
 
-// ROTAS
-// Redireciona raiz
+// raiz
 app.get('/', (req, res) => {
   res.redirect('/login.html');
 });
 
-// LOGIN
+// login
 app.post('/login', (req, res) => {
+
   const { username, password } = req.body;
 
   const user = users.find(
@@ -51,127 +58,122 @@ app.post('/login', (req, res) => {
   res.redirect('/dashboard');
 });
 
-// DASHBOARD
+// dashboard
 app.get('/dashboard', authMiddleware, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
 
-// LOGOUT
+// logout
 app.get('/logout', (req, res) => {
-  req.session.destroy();
-  res.redirect('/login.html');
+
+  req.session.destroy(() => {
+    res.redirect('/login.html');
+  });
+
 });
 
-// LISTA DE ROBÔS (mock)
+// lista robôs
 app.get('/robos', authMiddleware, (req, res) => {
+
   res.json([
-    {id: 'inicio', nome: 'Selecione um robô'},
+    { id: 'inicio', nome: 'Selecione um robô' },
     { id: 'Despesas', nome: 'Relatório e Conferência de Despesas' },
     { id: 'Estoque', nome: 'Relatório para Conferência de Estoque' }
   ]);
+
 });
 
-const estabelecimentos = require('./estabelecimentos.json');
-
+// estabelecimentos
 app.get('/estabelecimentos', authMiddleware, (req, res) => {
   res.json(estabelecimentos);
 });
 
-//esperar robo terminar execução
-async function esperarExecucao(webhookCallId) {
-  const url = `https://api.roberty.app/prod/1/customer/robot/webhookResponse/${webhookCallId}`;
+// executar robô
+app.post('/executar', authMiddleware, async (req, res) => {
 
-  let tentativas = 0;
-  const maxTentativas = 1000; // (10s cada)
+  let {
+    robo,
+    estabelecimentos,
+    data_inicio,
+    data_fim
+  } = req.body;
 
-  while (tentativas < maxTentativas) {
-    try {
-      const response = await axios.get(url);
+  const userId = req.session.user.username;
 
-      const status = response.data?.status;
+  // validação
+  if (
+    !robo ||
+    !estabelecimentos ||
+    estabelecimentos.length === 0 ||
+    !data_inicio ||
+    !data_fim ||
+    robo === 'inicio'
+  ) {
 
-      if (status === 'DONE') {
-        console.log('Robô finalizado com sucesso:', response.data);
-        return {
-          status: 'DONE',
-          data: response.data
-        };
+    return res.status(400).json({
+      erro: 'Campos obrigatórios faltando'
+    });
 
-      }
+  }
 
-    } catch (err) {
-      console.error('Erro ao consultar status:', {
-        message: err.message,
-        status: err.response?.status,
-        data: err.response?.data
+  // verifica cooldown
+  const ultimoUso = cooldownUsuarios.get(userId);
+
+  if (ultimoUso) {
+
+    const tempoPassado = Date.now() - ultimoUso;
+
+    if (tempoPassado < TEMPO_COOLDOWN) {
+
+      const restanteMs = TEMPO_COOLDOWN - tempoPassado;
+
+      const minutos = Math.ceil(restanteMs / 60000);
+
+      return res.status(429).json({
+        erro: `Aguarde ${minutos} minuto(s) para executar novamente`,
+        restanteMs
       });
 
     }
 
-    tentativas++;
-
-    // espera 10 segundos
-    await new Promise(resolve => setTimeout(resolve, 10000));
   }
 
-  return {
-    status: 'PROCESSANDO',
-    webhookCallId
-  };
-}
-
-//verifica status de execução do robô para o usuário
-app.get('/status', authMiddleware, (req, res) => {
-  const userId = req.session.user.username;
-
-  res.json({
-    executando: execucoesAtivas.get(userId) || false
-  });
-});
-
-
-// EXECUTAR ROBÔ
-app.post('/executar', authMiddleware, async (req, res) => {
-  let { robo, estabelecimentos, data_inicio, data_fim } = req.body;
-  const userId = req.session.user.username;
-
-  if (!robo || !estabelecimentos || estabelecimentos.length === 0 || !data_inicio || !data_fim || robo == 'inicio') {
-    return res.status(400).json({ erro: 'Campos obrigatórios faltando' });
-  }
-
-  if (execucoesAtivas.get(userId)) {
-    return res.status(429).json({
-      erro: 'Já existe um robô em execução para este usuário'
-    });
-  }
-
+  // formatar datas
   data_inicio = data_inicio.split('-').reverse().join('/');
   data_fim = data_fim.split('-').reverse().join('/');
 
   console.log('Executando robô:', {
-    usuario: req.session.user.username,
+    usuario: userId,
     robo,
     estabelecimentos,
     data_inicio,
     data_fim
   });
 
-  // Escolhe token baseado no robô
+  // token por robô
   let token;
-  console.log('ENDPOINT:', process.env.ENDPOINT);
-  if (robo === 'Despesas') {
-    token = process.env.TOKEN_DESPESAS;
-  } else if (robo === 'Estoque') {
-    token = process.env.TOKEN_ESTOQUE;
-  } else {
-    return res.status(400).json({ erro: 'Robô inválido' });
-  }
- console.log('Token selecionado para execução: ' + token );
-  
- try {
 
-    execucoesAtivas.set(userId, true);
+  if (robo === 'Despesas') {
+
+    token = process.env.TOKEN_DESPESAS;
+
+  } else if (robo === 'Estoque') {
+
+    token = process.env.TOKEN_ESTOQUE;
+
+  } else {
+
+    return res.status(400).json({
+      erro: 'Robô inválido'
+    });
+
+  }
+
+  try {
+
     const estabelecimentosTexto = estabelecimentos.join(',');
+
+    // dispara execução
     const startResponse = await axios.post(
       process.env.ENDPOINT,
       {
@@ -188,24 +190,34 @@ app.post('/executar', authMiddleware, async (req, res) => {
       }
     );
 
-    const webhookCallId = startResponse.data.webhookCallId;
-    const resultado = await esperarExecucao(webhookCallId);
+    // registra cooldown
+    cooldownUsuarios.set(userId, Date.now());
+
+    console.log('Robô iniciado com sucesso:', {
+      usuario: userId,
+      webhookCallId: startResponse.data.webhookCallId
+    });
 
     return res.json({
       ok: true,
-      resultado: resultado.data,
-      status: resultado.status,
+      mensagem: 'Robô iniciado com sucesso',
+      webhookCallId: startResponse.data.webhookCallId
     });
 
   } catch (err) {
-    console.error('Erro ao executar robô:', err.message);
+
+    console.error('Erro ao executar robô:', {
+      message: err.message,
+      status: err.response?.status,
+      data: err.response?.data
+    });
 
     return res.status(500).json({
       erro: 'Erro ao executar robô'
     });
-  } finally {
-    execucoesAtivas.delete(userId);
+
   }
+
 });
 
 app.listen(PORT, '0.0.0.0', () => {
