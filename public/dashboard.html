@@ -72,26 +72,31 @@
     </div>
 
 </body>
-
 <script>
     let executando = false;
+
+    // cooldown apenas em memória
+    let cooldownTimeout = null;
 
     // inicia cooldown
     function iniciarCooldown(tempoMs = 600000) {
 
-        const fim = Date.now() + tempoMs;
-
-        localStorage.setItem('cooldown_ate', fim);
-
         bloquearUI('Aguarde para executar novamente...');
 
-        setTimeout(finalizarCooldown, tempoMs);
+        // limpa timeout anterior
+        if (cooldownTimeout) {
+            clearTimeout(cooldownTimeout);
+        }
+
+        cooldownTimeout = setTimeout(() => {
+
+            finalizarCooldown();
+
+        }, tempoMs);
     }
 
     // finaliza cooldown
     function finalizarCooldown() {
-
-        localStorage.removeItem('cooldown_ate');
 
         liberarUI();
 
@@ -323,25 +328,6 @@
     window.onload = async () => {
 
         await carregarDados();
-
-        const cooldown =
-            localStorage.getItem('cooldown_ate');
-
-        if (cooldown && Date.now() < cooldown) {
-
-            bloquearUI(
-                'Aguarde para executar novamente...'
-            );
-
-            const restante =
-                cooldown - Date.now();
-
-            setTimeout(
-                finalizarCooldown,
-                restante
-            );
-
-        }
 
     };
 </script>
