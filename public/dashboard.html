@@ -4,332 +4,413 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel RPA</title>
-
+    <title>Executar Robô | Painel RPA</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-gradient-to-br from-gray-100 to-gray-200 min-h-screen font-sans">
+<body class="bg-gradient-to-br from-gray-100 to-gray-200 min-h-screen font-sans text-gray-800">
 
-    <header class="bg-white/80 backdrop-blur shadow-sm p-4 flex justify-between items-center">
-        <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            ⚙️ <span>Painel RPA</span>
-        </h1>
-        <a href="/logout" class="text-red-500 font-medium hover:text-red-600 transition">Sair</a>
+    <!-- CABEÇALHO -->
+    <header class="bg-white/80 backdrop-blur shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4
+                    flex flex-wrap justify-between items-center gap-4">
+
+            <a href="/dashboard"
+               class="text-2xl font-bold flex items-center gap-2 shrink-0">
+                <span>⚙️</span>
+                <span>Painel RPA</span>
+            </a>
+
+            <nav class="flex items-center gap-2 sm:gap-3">
+
+                <a href="/monitoramento"
+                   class="inline-flex items-center justify-center gap-2
+                          px-4 py-2 rounded-xl text-sm font-semibold
+                          text-gray-600 border border-gray-200 bg-white
+                          hover:bg-blue-50 hover:text-blue-700
+                          hover:border-blue-200 transition">
+                    <span>📊</span>
+                    <span>Monitoramento</span>
+                </a>
+
+                <a href="/logout"
+                   class="inline-flex items-center justify-center
+                          px-4 py-2 rounded-xl text-sm font-semibold
+                          text-red-600 border border-red-100 bg-red-50
+                          hover:bg-red-100 transition">
+                    Sair
+                </a>
+            </nav>
+        </div>
     </header>
 
-    <div class="flex justify-center items-center mt-16 px-4">
-        <div class="bg-white p-10 rounded-3xl shadow-xl w-full max-w-xl border border-gray-100">
+    <!-- CONTEÚDO -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
 
-            <h2 class="text-3xl font-semibold text-gray-800 mb-8 text-center">
-                Executar Robô
-            </h2>
+        <!-- TÍTULO DA PÁGINA -->
+        <div class="mb-8">
+            <p class="text-sm font-semibold text-blue-600 mb-2">
+                PAINEL DE AUTOMAÇÃO
+            </p>
 
-            <div class="space-y-5">
+            <p class="text-gray-500 mt-2">
+                Selecione o robô, os estabelecimentos e o período para iniciar a execução.
+            </p>
+        </div>
+
+        <!-- CARD PRINCIPAL -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden w-full max-w-8xl">
+
+            <div class="px-6 py-3 sm:px-6 border-b border-gray-100">
+                <h3 class="text-lg font-semibold text-gray-800">
+                    Configuração da execução
+                </h3>
+                <p class="text-sm text-gray-500 mt-1">
+                    Preencha os dados abaixo antes de executar.
+                </p>
+            </div>
+
+            <div class="p-5 sm:p-6 space-y-4">
 
                 <!-- ROBÔ -->
                 <div>
-                    <label class="block text-sm text-gray-500 mb-1">Robô</label>
+                    <label for="robo"
+                           class="block text-sm font-semibold text-gray-700 mb-2">
+                        Robô
+                    </label>
+
                     <select id="robo"
-                        class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition font-medium"></select>
+                            class="w-full px-4 py-3 bg-white border border-gray-200
+                                   rounded-xl text-gray-700
+                                   focus:outline-none focus:ring-2 focus:ring-blue-500
+                                   focus:border-blue-500 transition">
+                    </select>
                 </div>
 
                 <!-- ESTABELECIMENTOS -->
                 <div>
-                    <label class="block text-sm text-gray-500 mb-2">Estabelecimentos</label>
+                    <div class="flex flex-wrap justify-between items-center gap-2 mb-2">
+                        <label class="block text-sm font-semibold text-gray-700">
+                            Estabelecimentos
+                        </label>
+
+                        <div class="flex items-center gap-3 text-sm">
+                            <button type="button" onclick="selecionarEstabelecimentos(true)"
+                                    class="text-blue-600 hover:text-blue-800 font-medium transition">
+                                Selecionar todos
+                            </button>
+
+                            <span class="text-gray-300">|</span>
+
+                            <button type="button" onclick="selecionarEstabelecimentos(false)"
+                                    class="text-gray-500 hover:text-gray-700 font-medium transition">
+                                Limpar seleção
+                            </button>
+                        </div>
+                    </div>
 
                     <div id="estabelecimentosContainer"
-                        class="max-h-52 overflow-y-auto border border-gray-200 rounded-xl p-2 space-y-1">
+                         class="max-h-52 overflow-y-auto border border-gray-200
+                                rounded-xl p-2 space-y-1 bg-gray-50/50">
                     </div>
+
+                    <p id="contadorEstabelecimentos" class="text-xs text-gray-400 mt-2">
+                        Nenhum estabelecimento selecionado
+                    </p>
                 </div>
 
                 <!-- DATAS -->
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm text-gray-500 mb-1">Data inicial</label>
-                        <input type="date" id="data_inicio"
-                            class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
-                    </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        Período
+                    </label>
 
-                    <div>
-                        <label class="block text-sm text-gray-500 mb-1">Data final</label>
-                        <input type="date" id="data_fim"
-                            class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="data_inicio"
+                                   class="block text-xs text-gray-500 mb-2">
+                                Data inicial
+                            </label>
+
+                            <input type="date" id="data_inicio"
+                                   class="w-full min-w-0 px-4 py-3 border border-gray-200
+                                          rounded-xl bg-white
+                                          focus:outline-none focus:ring-2 focus:ring-blue-500
+                                          focus:border-blue-500 transition">
+                        </div>
+
+                        <div>
+                            <label for="data_fim"
+                                   class="block text-xs text-gray-500 mb-2">
+                                Data final
+                            </label>
+
+                            <input type="date" id="data_fim"
+                                   class="w-full min-w-0 px-4 py-3 border border-gray-200
+                                          rounded-xl bg-white
+                                          focus:outline-none focus:ring-2 focus:ring-blue-500
+                                          focus:border-blue-500 transition">
+                        </div>
                     </div>
                 </div>
 
                 <!-- STATUS -->
-                <div id="status" class="hidden text-center text-sm font-medium"></div>
+                <div id="status"
+                     role="status"
+                     aria-live="polite"
+                     class="hidden rounded-xl px-4 py-3 text-sm font-medium">
+                </div>
 
                 <!-- BOTÃO -->
-                <button onclick="executar()" id="btn"
-                    class="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 rounded-xl hover:scale-[1.02] hover:shadow-lg transition duration-200 font-semibold">
-                    Executar Robô
+                <button type="button" onclick="executar()" id="btn"
+                        class="w-full inline-flex items-center justify-center gap-2
+                               bg-blue-600 text-white py-3.5 px-5 rounded-xl
+                               hover:bg-blue-700 hover:shadow-md
+                               disabled:opacity-60 disabled:cursor-not-allowed
+                               transition duration-200 font-semibold">
+                    <span>▶</span>
+                    <span id="btnTexto">Executar Robô</span>
                 </button>
+
+                <p class="text-xs text-gray-400 text-center">
+                    Após iniciar uma execução, haverá um intervalo de 10 minutos
+                    antes de permitir uma nova solicitação nesta tela.
+                </p>
 
             </div>
         </div>
-    </div>
+    </main>
 
-</body>
 <script>
     let executando = false;
-
-    // cooldown apenas em memória
     let cooldownTimeout = null;
 
-    // inicia cooldown
-    function iniciarCooldown(tempoMs = 600000) {
+    function mostrarStatus(mensagem, tipo = 'info') {
+        const status = document.getElementById('status');
 
+        const estilos = {
+            info: 'bg-blue-50 text-blue-700 border border-blue-100',
+            sucesso: 'bg-green-50 text-green-700 border border-green-100',
+            erro: 'bg-red-50 text-red-700 border border-red-100',
+            neutro: 'bg-gray-50 text-gray-600 border border-gray-200'
+        };
+
+        status.textContent = mensagem;
+        status.className = `rounded-xl px-4 py-3 text-sm font-medium ${estilos[tipo] || estilos.info}`;
+    }
+
+    function atualizarContador() {
+        const selecionados = document.querySelectorAll(
+            '#estabelecimentosContainer input:checked'
+        ).length;
+
+        const total = document.querySelectorAll(
+            '#estabelecimentosContainer input[type="checkbox"]'
+        ).length;
+
+        document.getElementById('contadorEstabelecimentos').textContent =
+            `${selecionados} de ${total} estabelecimento(s) selecionado(s)`;
+    }
+
+    function selecionarEstabelecimentos(selecionar) {
+        document.querySelectorAll(
+            '#estabelecimentosContainer input[type="checkbox"]'
+        ).forEach(checkbox => {
+            checkbox.checked = selecionar;
+            atualizarEstiloEstabelecimento(checkbox);
+        });
+
+        atualizarContador();
+    }
+
+    function atualizarEstiloEstabelecimento(checkbox) {
+        const item = checkbox.closest('label');
+
+        if (!item) return;
+
+        item.classList.toggle('bg-blue-50', checkbox.checked);
+        item.classList.toggle('border-blue-300', checkbox.checked);
+        item.classList.toggle('border-gray-200', !checkbox.checked);
+    }
+
+    function iniciarCooldown(tempoMs = 600000) {
         bloquearUI('Aguarde para executar novamente...');
 
-        // limpa timeout anterior
         if (cooldownTimeout) {
             clearTimeout(cooldownTimeout);
         }
 
         cooldownTimeout = setTimeout(() => {
-
             finalizarCooldown();
-
         }, tempoMs);
     }
 
-    // finaliza cooldown
     function finalizarCooldown() {
-
         liberarUI();
-
-        const status = document.getElementById('status');
-
-        status.innerText = 'Pronto para executar novamente';
-
-        status.className =
-            'text-gray-600 text-center text-sm font-medium';
+        mostrarStatus('Pronto para executar novamente.', 'neutro');
     }
 
-    // carregar robôs e estabelecimentos
     async function carregarDados() {
+        const [resRobos, resEstabs] = await Promise.all([
+            fetch('/robos'),
+            fetch('/estabelecimentos')
+        ]);
 
-        const robos =
-            await fetch('/robos').then(r => r.json());
+        if (!resRobos.ok || !resEstabs.ok) {
+            throw new Error('Não foi possível carregar os robôs e estabelecimentos.');
+        }
 
-        const estabs =
-            await fetch('/estabelecimentos').then(r => r.json());
+        const [robos, estabs] = await Promise.all([
+            resRobos.json(),
+            resEstabs.json()
+        ]);
 
-        const roboSelect =
-            document.getElementById('robo');
+        const roboSelect = document.getElementById('robo');
+        const estContainer = document.getElementById('estabelecimentosContainer');
 
-        const estContainer =
-            document.getElementById('estabelecimentosContainer');
-
-        // limpar
         roboSelect.innerHTML = '';
         estContainer.innerHTML = '';
 
-        // robôs
         robos.forEach(r => {
-
             const opt = document.createElement('option');
-
             opt.value = r.id;
-            opt.innerText = r.nome;
-
+            opt.textContent = r.nome;
             roboSelect.appendChild(opt);
-
         });
 
-        // estabelecimentos
         estabs.forEach(e => {
-
             const item = document.createElement('label');
 
-            item.className = `
-                flex items-center gap-3 p-3 rounded-xl border border-gray-200
-                cursor-pointer hover:bg-blue-50 hover:border-blue-400 transition
-            `;
+            item.className =
+                'flex items-center gap-3 p-3 rounded-xl border border-gray-200 ' +
+                'cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition';
 
-            item.innerHTML = `
-                <input
-                    type="checkbox"
-                    value="${e.id}"
-                    class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                >
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.value = e.id;
+            checkbox.className =
+                'w-4 h-4 rounded text-blue-600 focus:ring-blue-500';
 
-                <span class="text-gray-700 font-medium">
-                    ${e.nome}
-                </span>
-            `;
-
-            const checkbox = item.querySelector('input');
+            const nome = document.createElement('span');
+            nome.className = 'text-sm text-gray-700 font-medium';
+            nome.textContent = e.nome;
 
             checkbox.addEventListener('change', () => {
-
-                if (checkbox.checked) {
-
-                    item.classList.add(
-                        'bg-blue-100',
-                        'border-blue-500'
-                    );
-
-                } else {
-
-                    item.classList.remove(
-                        'bg-blue-100',
-                        'border-blue-500'
-                    );
-
-                }
-
+                atualizarEstiloEstabelecimento(checkbox);
+                atualizarContador();
             });
 
+            item.appendChild(checkbox);
+            item.appendChild(nome);
             estContainer.appendChild(item);
-
         });
 
+        atualizarContador();
     }
 
-    // bloquear interface
     function bloquearUI(msg = 'Executando robô...') {
-
-        const btn =
-            document.getElementById('btn');
-
-        const status =
-            document.getElementById('status');
-
         executando = true;
+
+        const btn = document.getElementById('btn');
+        const btnTexto = document.getElementById('btnTexto');
 
         btn.disabled = true;
+        btnTexto.textContent = 'Aguarde...';
 
-        btn.innerText = 'Aguarde...';
-
-        status.classList.remove('hidden');
-
-        status.innerText = msg;
-
-        status.className =
-            'text-blue-600 text-center text-sm font-medium';
+        mostrarStatus(msg, 'info');
     }
 
-    // liberar interface
     function liberarUI() {
-
-        const btn =
-            document.getElementById('btn');
-
         executando = false;
 
-        btn.disabled = false;
+        const btn = document.getElementById('btn');
+        const btnTexto = document.getElementById('btnTexto');
 
-        btn.innerText = 'Executar Robô';
+        btn.disabled = false;
+        btnTexto.textContent = 'Executar Robô';
     }
 
-    // executar robô
     async function executar() {
-
         if (executando) return;
 
-        executando = true;
+        const robo = document.getElementById('robo').value;
+        const checkboxes = document.querySelectorAll(
+            '#estabelecimentosContainer input:checked'
+        );
 
-        bloquearUI('Executando robô...');
+        const estabelecimentos = Array.from(checkboxes).map(cb => cb.value);
+        const data_inicio = document.getElementById('data_inicio').value;
+        const data_fim = document.getElementById('data_fim').value;
 
-        const status =
-            document.getElementById('status');
+        if (!robo) {
+            mostrarStatus('Selecione um robô antes de continuar.', 'erro');
+            return;
+        }
 
-        const checkboxes =
-            document.querySelectorAll(
-                '#estabelecimentosContainer input:checked'
-            );
+        if (estabelecimentos.length === 0) {
+            mostrarStatus('Selecione pelo menos um estabelecimento.', 'erro');
+            return;
+        }
 
-        const estabelecimentos =
-            Array.from(checkboxes)
-                .map(cb => cb.value);
+        if (data_inicio && data_fim && data_inicio > data_fim) {
+            mostrarStatus('A data inicial não pode ser posterior à data final.', 'erro');
+            return;
+        }
+
+        bloquearUI('Enviando solicitação de execução...');
 
         const data = {
-            robo:
-                document.getElementById('robo').value,
-
+            robo,
             estabelecimentos,
-
-            data_inicio:
-                document.getElementById('data_inicio').value,
-
-            data_fim:
-                document.getElementById('data_fim').value
+            data_inicio,
+            data_fim
         };
 
         try {
-
             const res = await fetch('/executar', {
                 method: 'POST',
-
                 headers: {
                     'Content-Type': 'application/json'
                 },
-
                 body: JSON.stringify(data)
             });
 
             const json = await res.json();
 
-            // erro
             if (!res.ok) {
+                mostrarStatus(json.erro || 'Erro ao executar o robô.', 'erro');
 
-                status.innerText =
-                    json.erro || 'Erro ao executar';
-
-                status.className =
-                    'text-red-600 text-center text-sm font-medium';
-
-                // se backend informar tempo restante
                 if (json.restanteMs) {
-
                     iniciarCooldown(json.restanteMs);
-
                 } else {
-
                     liberarUI();
-
                 }
-
-                executando = false;
 
                 return;
             }
 
-            // sucesso
-            status.innerText =
-                'Robô iniciado com sucesso!';
-
-            status.className =
-                'text-green-600 text-center text-sm font-medium';
-
-            // inicia cooldown de 10 min
+            mostrarStatus('Robô iniciado com sucesso!', 'sucesso');
             iniciarCooldown(600000);
 
         } catch (err) {
-
-            console.error(err);
-
-            status.innerText =
-                'Erro ao executar o robô';
-
-            status.className =
-                'text-red-600 text-center text-sm font-medium';
-
+            console.error('Erro ao executar robô:', err);
+            mostrarStatus('Não foi possível comunicar com o servidor.', 'erro');
             liberarUI();
-
-            executando = false;
         }
     }
 
-    // ao carregar página
-    window.onload = async () => {
-
-        await carregarDados();
-
-    };
+    window.addEventListener('load', async () => {
+        try {
+            await carregarDados();
+        } catch (err) {
+            console.error('Erro ao carregar dados:', err);
+            mostrarStatus(
+                'Erro ao carregar os robôs e estabelecimentos. Atualize a página e tente novamente.',
+                'erro'
+            );
+        }
+    });
 </script>
 
+</body>
 </html>

@@ -86,7 +86,7 @@ await axios.post('URL_DO_RPA', { ... });
 
 * Projeto para uso local/interno
 * Não possui autenticação avançada
-* Não recomendado para produção sem ajustes
+* Sem conexão com BD
 
 ---
 

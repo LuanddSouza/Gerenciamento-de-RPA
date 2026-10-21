@@ -2,6 +2,9 @@ const express = require('express');
 const session = require('express-session');
 const path = require('path');
 const axios = require('axios');
+const {
+    buscarRobosEmExecucao
+} = require('./roberty');
 
 require('dotenv').config();
 
@@ -286,6 +289,44 @@ app.post(
 
   }
 );
+
+
+app.get('/monitoramento', authMiddleware, (req, res) => {
+    res.sendFile(
+        path.join(__dirname, 'public', 'monitoramento.html')
+    );
+});
+
+app.get(
+    '/api/robos/executando',
+    authMiddleware,
+    async (req, res) => {
+        try {
+            const execucoes = await buscarRobosEmExecucao();
+
+            res.set('Cache-Control', 'no-store');
+
+            res.json({
+                ok: true,
+                total: execucoes.length,
+                execucoes,
+                atualizadoEm: new Date().toISOString()
+            });
+        } catch (err) {
+            console.error(
+                'Erro no monitoramento Roberty:',
+                err.response?.status || '',
+                err.message
+            );
+
+            res.status(502).json({
+                ok: false,
+                erro: 'Falha ao consultar os robôs na Roberty.'
+            });
+        }
+    }
+);
+
 
 app.listen(
   PORT,

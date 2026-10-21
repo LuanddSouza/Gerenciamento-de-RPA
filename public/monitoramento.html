@@ -1,0 +1,261 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoramento RPA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-800">
+    <header class="bg-white border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-5 py-4 flex flex-wrap gap-4 justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold">Monitoramento RPA</h1>
+                <p class="text-sm text-slate-500">Execuções da workspace Roberty</p>
+            </div>
+            <div class="flex gap-3">
+                <a href="/dashboard"
+                   class="px-4 py-2 rounded-lg border hover:bg-slate-50">
+                    Voltar ao painel
+                </a>
+                <!-- <button onclick="buscarExecucoes()"
+                    class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">
+                    Atualizar
+                </button> -->
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-5 py-8 space-y-6">
+        <div id="erro"
+             class="hidden rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
+        </div>
+
+        <section class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                <p class="text-sm text-slate-500">Robôs em execução</p>
+                <p id="total" class="text-4xl font-bold mt-2">—</p>
+            </div>
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                <p class="text-sm text-slate-500">Máquinas ocupadas</p>
+                <p id="maquinas" class="text-4xl font-bold mt-2">—</p>
+            </div>
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                <p class="text-sm text-slate-500">Última atualização</p>
+                <p id="atualizado" class="text-lg font-semibold mt-3">Carregando...</p>
+                <p id="conexao" class="text-xs text-slate-500 mt-2">Conectando à Roberty...</p>
+            </div>
+        </section>
+
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="p-5 border-b border-slate-200 flex flex-col sm:flex-row gap-3 justify-between">
+                <div>
+                    <h2 class="text-xl font-bold">Execuções ativas</h2>
+                    <p class="text-sm text-slate-500 mt-1">
+                        Período consultado: ontem e hoje
+                    </p>
+                </div>
+                <input id="filtro" type="search"
+                    placeholder="Buscar robô ou máquina..."
+                    class="border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+                    oninput="renderizar()">
+            </div>
+
+            <div id="lista" class="divide-y divide-slate-100">
+                <div class="p-8 text-center text-slate-500">
+                    Carregando execuções...
+                </div>
+            </div>
+
+            <div class="p-4 bg-slate-50 text-xs text-slate-500">
+                Atualização automática a cada 30 segundos.
+            </div>
+        </section>
+    </main>
+
+    <script>
+        let execucoes = [];
+        let carregando = false;
+        let ultimaAtualizacao = null;
+
+        function escapar(valor) {
+            return String(valor ?? '').replace(/[&<>"']/g, c => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            })[c]);
+        }
+
+        function formatarData(valor) {
+            if (!valor) return 'Não informado';
+
+            const data = new Date(valor);
+
+            if (Number.isNaN(data.getTime())) {
+                return 'Não informado';
+            }
+
+            return data.toLocaleString('pt-BR');
+        }
+
+        function duracao(inicio) {
+            const timestamp = new Date(inicio).getTime();
+
+            if (!Number.isFinite(timestamp)) {
+                return 'Indisponível';
+            }
+
+            const segundos = Math.max(
+                0,
+                Math.floor((Date.now() - timestamp) / 1000)
+            );
+
+            const horas = Math.floor(segundos / 3600);
+            const minutos = Math.floor((segundos % 3600) / 60);
+            const seg = segundos % 60;
+
+            if (horas > 0) {
+                return `${horas}h ${minutos}min`;
+            }
+
+            if (minutos > 0) {
+                return `${minutos}min ${seg}s`;
+            }
+
+            return `${seg}s`;
+        }
+
+        function renderizar() {
+            const filtro = document.getElementById('filtro')
+                .value.trim().toLocaleLowerCase('pt-BR');
+
+            const filtradas = execucoes.filter(e =>
+                `${e.nome} ${e.dispositivo}`
+                    .toLocaleLowerCase('pt-BR')
+                    .includes(filtro)
+            );
+
+            const lista = document.getElementById('lista');
+
+            if (!filtradas.length) {
+                lista.innerHTML = `
+                    <div class="p-10 text-center">
+                        <div class="text-4xl mb-3">🤖</div>
+                        <p class="font-semibold">Nenhuma execução encontrada</p>
+                        <p class="text-sm text-slate-500 mt-1">
+                            ${filtro
+                                ? 'Tente outro termo de busca.'
+                                : 'Não foram identificados robôs em execução no período consultado.'}
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+
+            lista.innerHTML = filtradas.map(e => `
+                <article class="p-5 hover:bg-slate-50 transition">
+                    <div class="flex flex-col md:flex-row md:items-center gap-4 justify-between">
+                        <div class="flex gap-3 items-start">
+                            <div class="w-11 h-11 rounded-xl bg-emerald-50 flex items-center justify-center text-xl">
+                                🤖
+                            </div>
+                            <div>
+                                <h3 class="font-bold">${escapar(e.nome)}</h3>
+                                <p class="text-sm text-slate-500 mt-1">
+                                    Máquina: ${escapar(e.dispositivo)}
+                                </p>
+                                <p class="text-xs text-slate-500 mt-1">
+                                    Início: ${escapar(formatarData(e.inicio))}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="md:text-right">
+                            <span class="inline-flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                Em execução
+                            </span>
+                            <p class="text-lg font-bold mt-2">
+                                ${escapar(duracao(e.inicio))}
+                            </p>
+                            <p class="text-xs text-slate-500">Tempo decorrido</p>
+                        </div>
+                    </div>
+                </article>
+            `).join('');
+        }
+
+        async function buscarExecucoes() {
+            if (carregando) return;
+
+            carregando = true;
+            document.getElementById('conexao').textContent =
+                'Consultando Roberty...';
+
+            try {
+                const resposta = await fetch('/api/robos/executando', {
+                    cache: 'no-store',
+                    headers: { Accept: 'application/json' }
+                });
+
+                if (resposta.status === 401 || resposta.redirected) {
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                const dados = await resposta.json();
+
+                if (!resposta.ok || !dados.ok) {
+                    throw new Error(dados.erro || 'Falha na consulta.');
+                }
+
+                execucoes = dados.execucoes || [];
+                ultimaAtualizacao = new Date();
+
+                document.getElementById('total').textContent =
+                    execucoes.length;
+
+                document.getElementById('maquinas').textContent =
+                    new Set(execucoes.map(e => e.dispositivo)).size;
+
+                document.getElementById('atualizado').textContent =
+                    ultimaAtualizacao.toLocaleTimeString('pt-BR');
+
+                document.getElementById('conexao').textContent =
+                    'Conectado · próxima consulta em 30 segundos';
+
+                document.getElementById('erro').classList.add('hidden');
+
+                renderizar();
+            } catch (err) {
+                document.getElementById('erro').textContent =
+                    'Não foi possível atualizar o monitoramento. ' +
+                    err.message;
+
+                document.getElementById('erro').classList.remove('hidden');
+
+                document.getElementById('conexao').textContent =
+                    'Falha na consulta · tentando novamente';
+
+                // Mantém a última informação recebida,
+                // mas não a apresenta como recém-atualizada.
+            } finally {
+                carregando = false;
+            }
+        }
+
+        setInterval(() => {
+            buscarExecucoes();
+        }, 30000);
+
+        // Atualiza os tempos exibidos sem esperar nova consulta.
+        setInterval(() => {
+            renderizar();
+        }, 1000);
+
+        buscarExecucoes();
+    </script>
+</body>
+</html>
